@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+pydantic
+pandas
+numpy
+scikit-learn
+xgboost
+joblib
+kafka-python
+pyspark
+sqlalchemy
+psycopg2-binary
+python-dotenv
+prometheus-client
+httpx
+pytest

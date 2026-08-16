@@ -1,0 +1,348 @@
+# Real-Time Fraud Detection Platform
+
+A production-style machine learning and streaming data platform for detecting fraudulent financial transactions in real time.
+
+The system combines **Apache Kafka, Spark Structured Streaming, machine learning inference, FastAPI, PostgreSQL, Docker, and automated testing** to demonstrate an end-to-end production ML architecture.
+
+## Architecture
+
+```text
+Transaction Producer
+        |
+        v
+   Apache Kafka
+        |
+        v
+Spark Structured Streaming
+        |
+        v
+Transaction Parsing
+        |
+        v
+Feature Engineering
+        |
+        v
+Fraud Detection Model
+        |
+        v
+PostgreSQL
+        |
+        v
+FastAPI
+   |         |
+   v         v
+Statistics  High-Risk Events
+```
+
+The project also contains a lightweight Python Kafka consumer that can process transactions without Spark.
+
+## Features
+
+- Real-time synthetic transaction generation
+- Apache Kafka event streaming
+- Spark Structured Streaming ingestion
+- Transaction schema validation with Pydantic
+- Fraud-oriented feature engineering
+- Machine learning fraud probability scoring
+- High-risk transaction classification
+- PostgreSQL persistence
+- Idempotent transaction persistence using transaction IDs
+- FastAPI REST API
+- Interactive OpenAPI/Swagger documentation
+- Fraud statistics endpoint
+- High-risk event querying
+- Recent transaction querying
+- Dockerized Kafka and PostgreSQL infrastructure
+- Automated testing with pytest
+
+## Technology Stack
+
+**Languages & ML**
+- Python
+- scikit-learn
+- NumPy
+- pandas
+- XGBoost-ready environment
+- joblib
+
+**Streaming & Data Engineering**
+- Apache Kafka
+- Apache Spark
+- Spark Structured Streaming
+- PostgreSQL
+- SQLAlchemy
+
+**Backend**
+- FastAPI
+- Pydantic
+- Uvicorn
+
+**Infrastructure & Testing**
+- Docker
+- Docker Compose
+- pytest
+
+## Machine Learning Features
+
+The fraud model uses transaction-level behavioral features including:
+
+- Transaction amount
+- Transaction hour
+- Card-present status
+- Number of previous transactions in the last 24 hours
+- Previous transaction amount in the last 24 hours
+- Current-to-previous transaction amount ratio
+
+The model returns:
+
+```json
+{
+  "transaction_id": "example-transaction",
+  "fraud_probability": 0.7689,
+  "is_fraud": true
+}
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | Service information |
+| GET | `/health` | Health and model status |
+| POST | `/predict` | Score an individual transaction |
+| GET | `/events/recent` | Retrieve recent scored transactions |
+| GET | `/events/high-risk` | Retrieve transactions above a fraud threshold |
+| GET | `/stats` | Retrieve fraud detection statistics |
+
+Interactive API documentation is available at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+## Project Structure
+
+```text
+real-time-fraud-detection-platform/
+├── app/
+│   ├── database.py
+│   ├── main.py
+│   └── models.py
+├── ml/
+│   ├── features.py
+│   ├── predict.py
+│   └── train.py
+├── producer/
+│   └── transaction_producer.py
+├── streaming/
+│   ├── fraud_stream.py
+│   └── spark_fraud_stream.py
+├── tests/
+│   ├── test_api.py
+│   ├── test_features.py
+│   └── test_predict.py
+├── data/
+├── models/
+├── Dockerfile
+├── docker-compose.yml
+├── pytest.ini
+├── requirements.txt
+└── README.md
+```
+
+## Local Setup
+
+### 1. Create a virtual environment
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 2. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### 3. Start Kafka and PostgreSQL
+
+Make sure Docker Desktop is running.
+
+```bash
+docker compose up -d
+```
+
+Verify:
+
+```bash
+docker compose ps
+```
+
+### 4. Train the fraud model
+
+```bash
+python -m ml.train
+```
+
+### 5. Start the API
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+## Generate Streaming Transactions
+
+Run:
+
+```bash
+python producer/transaction_producer.py
+```
+
+The producer continuously publishes synthetic financial transactions to the Kafka `transactions` topic.
+
+Example:
+
+```text
+Published d3ef9a21-... | $2285.08
+```
+
+## Python Kafka Fraud Consumer
+
+The lightweight consumer can be started with:
+
+```bash
+python -m streaming.fraud_stream
+```
+
+It performs:
+
+```text
+Kafka
+→ Pydantic validation
+→ Feature engineering
+→ ML inference
+→ PostgreSQL
+```
+
+## Spark Structured Streaming
+
+Start the distributed streaming pipeline with:
+
+```bash
+PYTHONPATH=. spark-submit \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.2.0 \
+  streaming/spark_fraud_stream.py
+```
+
+Then run the transaction producer in another terminal.
+
+The Spark pipeline performs:
+
+```text
+Kafka
+→ Spark Structured Streaming
+→ Schema parsing
+→ ML fraud scoring
+→ PostgreSQL
+```
+
+Spark checkpointing is used to support reliable stream processing.
+
+## Example Detection
+
+During end-to-end testing, the platform successfully processed and persisted streamed transactions such as:
+
+```text
+Amount: $2285.08
+Fraud probability: 0.7689
+Classification: Fraud
+```
+
+This example is generated by the project's synthetic transaction stream and demonstration model; it is not a claim about performance on real-world financial data.
+
+## Database Verification
+
+Connect to PostgreSQL:
+
+```bash
+docker exec -it fraud-postgres \
+  psql -U fraud -d fraud_detection
+```
+
+Example query:
+
+```sql
+SELECT
+    transaction_id,
+    amount,
+    fraud_probability,
+    is_fraud
+FROM fraud_events
+ORDER BY timestamp DESC
+LIMIT 10;
+```
+
+## Tests
+
+Run:
+
+```bash
+python -m pytest -q
+```
+
+Current test suite:
+
+```text
+10 passed
+```
+
+Tests cover:
+
+- Feature engineering
+- Feature vector generation
+- ML prediction
+- FastAPI health checks
+- Individual fraud scoring
+- Recent event retrieval
+- High-risk event retrieval
+- Fraud statistics
+
+## Production Considerations
+
+This repository is a portfolio/reference implementation rather than a production financial risk system.
+
+Potential production upgrades include:
+
+- Replace synthetic training data with governed historical transaction data
+- Add event-time windows and stateful behavioral features
+- Introduce model registry and experiment tracking
+- Add model drift and data-quality monitoring
+- Add Prometheus metrics and OpenTelemetry tracing
+- Implement dead-letter queues for invalid events
+- Add schema registry and event versioning
+- Add authentication and role-based API authorization
+- Use managed Kafka and managed PostgreSQL
+- Deploy Spark workloads to a distributed cluster
+- Add Kubernetes deployment manifests
+- Add CI/CD model validation gates
+
+## Resume-Ready Summary
+
+**Real-Time Fraud Detection Platform — Python, Kafka, Spark, FastAPI, PostgreSQL, Docker, Machine Learning**
+
+- Built an end-to-end real-time fraud detection platform using Apache Kafka and Spark Structured Streaming to ingest and process transaction events.
+- Developed transaction feature engineering and machine-learning inference pipelines that generate fraud probabilities and persist scored events to PostgreSQL.
+- Built FastAPI services for real-time inference, high-risk event retrieval, transaction monitoring, and fraud statistics.
+- Implemented containerized Kafka/PostgreSQL infrastructure, Spark checkpointing, idempotent persistence, and automated pytest coverage.
+
+## Disclaimer
+
+This project uses synthetic transaction and training data for engineering demonstration purposes. It is intended to demonstrate production ML architecture, streaming systems, backend engineering, and MLOps concepts rather than provide a validated financial fraud model.
