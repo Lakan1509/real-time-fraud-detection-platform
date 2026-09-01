@@ -46,8 +46,9 @@ def generate_training_data(
     return X, y
 
 
-def train_model():
-    X, y = generate_training_data()
+def train_model(X=None, y=None):
+    if X is None or y is None:
+        X, y = generate_training_data()
 
     model = RandomForestClassifier(
         n_estimators=150,
